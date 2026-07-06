@@ -10,7 +10,6 @@ app.secret_key = 'admin'
 
 
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -31,7 +30,7 @@ def executionquery(query,values):
 mydb = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="",
+    password="root",
     port="3306",
     database='network'
 )
@@ -195,7 +194,52 @@ def model():
 
 @app.route('/prediction', methods=["GET", "POST"])
 def prediction():
- 
+    if request.method == "POST":
+        # Capture new fields
+        ip_dst_host = request.form['ip_dst_host']
+        http_content_length = float(request.form['http_content_length'])
+        tcp_ack = float(request.form['tcp_ack'])
+        tcp_ack_raw = float(request.form['tcp_ack_raw'])
+        tcp_dstport = float(request.form['tcp_dstport'])
+        tcp_flags = request.form['tcp_flags']
+        tcp_len = float(request.form['tcp_len'])
+        tcp_options = request.form['tcp_options']
+        tcp_payload = request.form['tcp_payload']
+        tcp_seq = float(request.form['tcp_seq'])
+        tcp_srcport = float(request.form['tcp_srcport'])
+        dns_retransmit = float(request.form['dns_retransmit'])
+        mqtt_ver = request.form['mqtt_ver']
+        
+        
+
+        # Combine inputs into a numpy array including the new features
+        inputs = [[
+            ip_dst_host, http_content_length, tcp_ack, tcp_ack_raw, tcp_dstport,
+            tcp_flags, tcp_len, tcp_options, tcp_payload, tcp_seq, tcp_srcport,
+            dns_retransmit, mqtt_ver]]
+
+        model = joblib.load("models/RandomForestClassifier.joblib") 
+        # Make a prediction
+        prediction1 = model.predict(inputs)
+    
+        # Interpret the prediction
+        if prediction1 == 0:
+            result = 'DDoS_ICMP(Distributed Denial of Service (DDoS) using Internet Control Message Protocol (ICMP))'
+        elif prediction1 == 1:
+            result = 'DDoS_TCP(Distributed Denial of Service (DDoS) using Transmission Control Protocol (TCP))'
+        elif prediction1 == 2:
+            result = 'DDoS_UDP(Distributed Denial of Service (DDoS) using User Datagram Protocol (UDP))'
+        elif prediction1 == 3:
+            result = 'Password (Password Attack)'
+        elif prediction1 == 4:
+            result = 'Port_Scanning (Port Scanning Attack)'
+        elif prediction1 == 5:
+            result = 'Ransomware(Ransomware Attack)'
+        elif prediction1 == 6:
+            result = 'Vulnerability_scanner(Vulnerability Scanner Attack)'
+
+        return render_template('prediction.html', result=result)
+
     return render_template('prediction.html')
      
 
